@@ -34,8 +34,8 @@ class Favorite (db.Model):
 
 class People (db.Model):
     __tablename__ = 'people'
-    id = db.Column (db.Integer, primary_key=True)
-    name = db.Column (db.String(100)) # does it need unique?
+    id = db.Column (db.Integer, unique=True, primary_key=True)
+    name = db.Column (db.String(100), unique=True)
     age = db.Column (db.Integer)
     height = db.Column (db.Integer)
     
@@ -50,8 +50,8 @@ class People (db.Model):
     
 class Planets (db.Model):
     __tablename__ = 'planets'
-    id = db.Column (db.Integer, primary_key=True)
-    name = db.Column (db.String(100)) # does it need unique?
+    id = db.Column (db.Integer, unique=True, primary_key=True)
+    name = db.Column (db.String(100), unique=True) 
     mass = db.Column (db.Integer)
     environment = db.Column (db.String (100))
 
