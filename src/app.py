@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User
+from models import db, User, Star_Systems, Factions, Planets, Species, Characters, User_Favorite
 #from models import Person
 
 app = Flask(__name__)
@@ -38,101 +38,85 @@ def sitemap():
 
 @app.route('/user', methods=['GET'])
 def get_users():
-    results =[]
     users = User.query.all()
-    for user in users:
-         results.append(user.serialize())
-    return jsonify(results), 200
+    serialized_users = [User.serialize() for User in users]
+    return({'msg': 'All the users  in the database', 'result': serialized_users}), 200
 
-@app.route('/user', methods=['GET'])
-def get_person(person_id):
-    person = People.query.get ( person_id)
+@app.route('/characters', methods=['GET'])
+def get_characters():
+    character = Characters.query.all() 
+    serialized_characters = [Characters.serialize() for Characters in character] 
+    return({'msg': 'All the people in database', 'result': serialized_characters}), 200 
 
-    if person:
-        return jsonify(person.serialize()), 200
-    
-    return jsonify({'message': 'Person not found'}), 404
-
-
-
-#---fAVS
-def get_all_favorites (user_id):
-    User = User.query.get ( user_id)
-
-    serialize_favorites = []
-    for favorite in User.favorites:
-        serialize_favorites.append(favorite.serialize())
-
-    if len (serialize_favorites) > 0:
-        return jsonify (serialize_favorites), 200
-    
-    return jsonify({'message': 'Cannot find favorite'}), 404
-
-
-#---ADD PLANETS
-@app.route('/planets', methods=['POST'])
-def add_planet():
-    req_body = request.get_json()
-    person_name = req_body ['name']
-    person_mass = req_body ['mass']
-    person_environment = req_body ['environment']
-
-    new_planet = People (name = person_name, mass = person_mass, environment = person_environment)
-
-    db.session.add(new_planet)
-    db.session.commit()
-
-    return jsonify ({'Message': 'Posted new planet to database'}), 200
-
-#---GET PLANETS
 @app.route('/planets', methods=['GET'])
 def get_planets():
+    all_planets = Planets.query.all()
+    serialized_all_planets = [Planets.serialize() for Planets in all_planets]
+    return({'msg': 'Here you go all the planets currently in the database', 'result': serialized_all_planets}), 200
+
+@app.route('/characters/<int:character_id>', methods=['GET'])
+def get_one_person(character_id):
+    character = Characters.query.get(character_id)
+    return jsonify({'msg': 'Here you go the person', 'result': character.serialize()}), 200
     
-    planets = Planets.query.all ()
-    serialized_planets = []
-    for planet in planets:
-        serialized_planets.append(planet.serialize())
+@app.route('/planets/<int:planet_id>', methods=['GET'])
+def get_one_planet(planet_id):
+    planet = Planets.query.get(planet_id)
+    return jsonify({'msg': 'Here you go the planet', 'result': planet.serialize()}), 200
 
-    if len(serialized_planets) > 0:
-        return jsonify(serialized_planets), 200
-    
-    return jsonify ({'Message': 'No planets in database'}), 404
+@app.route('/users/favorites', methods=['GET'])
+def get_user_favorites():
+    current_user_id = get_current_user_id()
+    user_favorites = User_Favorite.query.filter_by(user_Id= current_user_id).all()
+    serialized_favorites = [favorite.serialize() for favorite in user_favorites]
+    return {'msg': 'Here are the favorites for the current user', 'result': serialized_favorites}, 200
 
+@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
+def add_favorite_planet(planet_id):
+     current_user_id = get_current_user_id()
+     existing_favorite = User_Favorite.query.filter_by(user_Id=current_user_id, planet_Id=planet_id).first()
+     if existing_favorite:
+            return {'msg': 'Favorite planet already exists for the current user'}, 400
+     new_favorite = User_Favorite(user_Id=current_user_id, planet_Id=planet_id, name_of_favorite='planet')
+     db.session.add(new_favorite)
+     db.session.commit()
+     return {'msg': 'Favorite planet added successfully'}, 201
 
-# this only runs if `$ python src/app.py` is executed
+@app.route('/favorite/people/<int:people_id>', methods=['POST'])
+def add_favorite_person(people_id):
+     current_user_id = get_current_user_id()
+     existing_favorite = User_Favorite.query.filter_by(user_Id=current_user_id, character_Id=people_id_id).first()
+     if existing_favorite:
+            return {'msg': 'Favorite planet already exists for the current user'}, 400
+     new_favorite = User_Favorite(user_Id=current_user_id, character_Id=people_id, name_of_favorite='people')
+     db.session.add(new_favorite)
+     db.session.commit()
+     return {'msg': 'Favorite people added successfully'}, 201
+        
+
+@app.route('/favorite/planet/<int:planet_id>', methods=['DELETE'])
+def delete_favorite_planet(planet_id):
+     current_user_id = get_current_user_id()
+     favorite_planet = User_Favorite.query.filter_by(user_Id=current_user_id, planet_Id=planet_id).first()
+     if not favorite_planet: 
+        return {'msg': 'Favorite planet not found for the current user'}, 404
+     db.session.delete(favorite_planet)
+     db.session.commit()
+     return {'msg': 'Favorite planet deleted successfully'}, 200
+
+@app.route('/favorite/people/<int:people_id>', methods=['DELETE'])
+def delete_favorite_person(people_id):
+     current_user_id = get_current_user_id()
+     favorite_person = User_Favorite.query.filter_by(user_Id=current_user_id, character_Id=people_id).first()
+     if not favorite_person: 
+        return {'msg': 'Favorite person not found for the current user'}, 404
+     db.session.delete(favorite_person)
+     db.session.commit()
+     return {'msg': 'Favorite person deleted successfully'}, 200
+
+def get_current_user_id():
+    return 1
+
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=False)
-
-# gets a certain planet ID info
-@app.route('/planets/<int:planet_id>', methods=['GET'])
-def get_planet(planet_id):
-    planet = Planet.query.get ( planet_id)
-
-    if planet:
-        return jsonify(planet.serialize()), 200
-    
-    return jsonify({'message': 'Planet not found'}), 404
-
-
-
-# add a new favorite planet to the current user 
-@app.route('/favorite/planet/<int:planet_id>', methods=['POST'])
-def add_favorite_planet (planet_id):
-    user_id = 1
-
-    current_user = User.query.get(user_id)
-
-    if current_user: 
-        planet = Planet.query.get(planet_id)
-
-        favorites = Favorites ()
-        favorites.user = current_user
-        favorites.plamet = planet
-
-        current_user.favorites.append(favorites)
-        db.session.commit()
-
-        return jsonify({ 'Message': 'Added planet to user favorites'}), 200
-    
-    return jsonify({"Message": "Error while Adding planet"}), 404
