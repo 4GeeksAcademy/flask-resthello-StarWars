@@ -26,8 +26,8 @@ class Item(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     img = db.Column(db.String(), unique=True, nullable=False)
     characters = db.relationship('Character', back_populates='item')
-    planets = db.relationships('Planets', back_populates='item')
-    vehicles = db.relationships('Vehicles', back_populates='item')
+    planets = db.relationships('Planet', back_populates='item')
+    vehicles = db.relationships('Vehicle', back_populates='item')
     favorites = db.relationships('User_Favorite', back_populates='item')
 
 class Character(db.Model):
@@ -51,7 +51,7 @@ class Character(db.Model):
         return {
             "id": self.id,
             "name": self.name,
-            "gender": self.leader,
+            "gender": self.gender,
         }
     
 class Planet(db.Model):
@@ -66,7 +66,7 @@ class Planet(db.Model):
     
 
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'))
-    item = db.relationship('Item', back_populate='characters')
+    item = db.relationship('Item', back_populate='planets')
     favorite_planets = db.relationship('User_Favorite', back_populates = "planets", uselist = True)
 
     def serialize(self):
@@ -80,7 +80,7 @@ class Planet(db.Model):
         }
 
 
-class Vehicles(db.Model):
+class Vehicle(db.Model):
     __tablename__ = 'vehicles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), unique=True, nullable=False)
